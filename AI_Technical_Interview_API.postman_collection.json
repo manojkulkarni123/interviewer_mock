@@ -1,0 +1,228 @@
+{
+    "info": {
+        "name": "AI Technical Interview API",
+        "description": "Collection for testing the AI Technical Interview System API endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Resume Parser",
+            "item": [
+                {
+                    "name": "Upload Resume",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "",
+                                    "description": "PDF resume file to upload"
+                                },
+                                {
+                                    "key": "candidate_name",
+                                    "value": "Manoj K",
+                                    "type": "text",
+                                    "description": "Name of the candidate"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/parse-resume/",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["parse-resume", ""]
+                        },
+                        "description": "Upload a resume PDF file for parsing. The response will include an interview_id that you'll need for subsequent requests."
+                    }
+                },
+                {
+                    "name": "Get Resume Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/resume/{{interview_id}}",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["resume", "{{interview_id}}"]
+                        },
+                        "description": "Retrieve the parsed resume data using the interview_id"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Skill Rating",
+            "item": [
+                {
+                    "name": "Rate Skills",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"interview_id\": \"{{interview_id}}\",\n    \"skills\": {\n        \"HTML\": 8,\n        \"CSS\": 7,\n        \"JavaScript\": 9,\n        \"Python\": 8,\n        \"FastAPI\": 7,\n        \"MongoDB\": 8\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/rate/",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["rate", ""]
+                        },
+                        "description": "Rate the candidate's technical skills. Skills should be rated on a scale of 1-10."
+                    }
+                },
+                {
+                    "name": "Get Skill Ratings",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/rate/skills/{{interview_id}}",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["rate", "skills", "{{interview_id}}"]
+                        },
+                        "description": "Retrieve the skill ratings for a specific interview"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Interview",
+            "item": [
+                {
+                    "name": "Start Interview",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"interview_id\": \"{{interview_id}}\",\n    \"role\": \"Senior Software Engineer\",\n    \"experience_level\": \"senior\",\n    \"candidate_name\": \"Manoj K\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/interview/start",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["interview", "start"]
+                        },
+                        "description": "Start a new interview session. Make sure you've uploaded a resume and rated skills first."
+                    }
+                },
+                {
+                    "name": "Continue Interview",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"interview_id\": \"{{interview_id}}\",\n    \"role\": \"Senior Software Engineer\",\n    \"experience_level\": \"senior\",\n    \"candidate_name\": \"Manoj K\",\n    \"skills\": {\n        \"HTML\": 8,\n        \"CSS\": 7,\n        \"JavaScript\": 9,\n        \"Python\": 8,\n        \"FastAPI\": 7,\n        \"MongoDB\": 8\n    },\n    \"conversation_history\": [\n        {\n            \"question\": \"Could you tell me about your professional journey and what led you to apply for this Senior Software Engineer position?\",\n            \"answer\": \"I am a passionate software engineer with over 8 years of experience in full-stack development. Throughout my career, I've worked on various projects including a healthcare management system and implemented microservices architecture that improved system scalability.\",\n            \"skill\": \"general\"\n        }\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/interview/continue",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["interview", "continue"]
+                        },
+                        "description": "Continue the interview by providing your answer to the previous question. The conversation_history should include the previous question and your answer."
+                    }
+                },
+                {
+                    "name": "Get Interview Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/interview/{{interview_id}}/status",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["interview", "{{interview_id}}", "status"]
+                        },
+                        "description": "Check the current status of the interview"
+                    }
+                },
+                {
+                    "name": "Get Interview History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/interview/{{interview_id}}/history",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["interview", "{{interview_id}}", "history"]
+                        },
+                        "description": "Get the complete interview history with all questions and answers"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Health Checks",
+            "item": [
+                {
+                    "name": "API Health",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://127.0.0.1:8000/health",
+                            "protocol": "http",
+                            "host": ["127", "0", "0", "1"],
+                            "port": "8000",
+                            "path": ["health"]
+                        },
+                        "description": "Check the health status of the API and its services"
+                    }
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ]
+} 

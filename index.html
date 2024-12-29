@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Technical Interview System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .section {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .response {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .skill-rating {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        .skill-rating label {
+            width: 200px;
+            font-weight: bold;
+        }
+        .skill-rating input[type="range"] {
+            flex: 1;
+            max-width: 300px;
+        }
+        .skill-rating span {
+            min-width: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Technical Interview System</h1>
+    
+    <!-- Step 1: Resume Upload -->
+    <div class="section">
+        <h2>1. Upload Resume</h2>
+        <form id="resumeForm">
+            <div class="form-group">
+                <label for="resumeFile">Resume (PDF):</label>
+                <input type="file" id="resumeFile" accept=".pdf" required>
+            </div>
+            <div class="form-group">
+                <label for="candidateName">Candidate Name (Required):</label>
+                <input type="text" id="candidateName" required placeholder="Enter candidate's full name">
+            </div>
+            <button type="submit">Upload Resume</button>
+        </form>
+        <div id="resumeResponse" class="response"></div>
+    </div>
+
+    <!-- Step 2: Skills Rating -->
+    <div class="section">
+        <h2>2. Rate Technical Skills</h2>
+        <div class="form-group">
+            <label for="skillsInterviewId">Interview ID:</label>
+            <input type="text" id="skillsInterviewId">
+            <button onclick="fetchSkills()">Load Skills</button>
+        </div>
+        <form id="skillsForm" style="display: none;">
+            <div id="skillsList"></div>
+            <button type="submit">Submit Ratings</button>
+        </form>
+        <div id="skillsResponse" class="response"></div>
+    </div>
+
+    <!-- Step 3: Interview -->
+    <div class="section">
+        <h2>3. Technical Interview</h2>
+        <div class="form-group">
+            <label for="interviewId">Interview ID:</label>
+            <input type="text" id="interviewId">
+        </div>
+        <div class="form-group">
+            <label for="role">Job Role:</label>
+            <input type="text" id="role" placeholder="e.g., Software Engineer" required>
+        </div>
+        <div class="form-group">
+            <label for="experienceLevel">Experience Level:</label>
+            <select id="experienceLevel">
+                <option value="junior">Junior</option>
+                <option value="mid">Mid-level</option>
+                <option value="senior">Senior</option>
+            </select>
+        </div>
+        <button onclick="startInterview()">Start Interview</button>
+        <div id="interviewArea" style="display: none;">
+            <div id="currentQuestion" class="response"></div>
+            <div class="form-group">
+                <label for="answer">Your Answer:</label>
+                <textarea id="answer" placeholder="Type your answer here..."></textarea>
+            </div>
+            <button onclick="submitAnswer()">Submit Answer</button>
+        </div>
+        <button onclick="checkStatus()">Check Status</button>
+        <div id="interviewResponse" class="response"></div>
+    </div>
+
+    <!-- Step 4: PDF Report -->
+    <div class="section">
+        <h2>4. Generate Report</h2>
+        <div class="form-group">
+            <label for="reportId">Interview ID:</label>
+            <input type="text" id="reportId">
+        </div>
+        <button onclick="generateReport()">Generate PDF Report</button>
+        <button onclick="downloadReport()">Download Report</button>
+        <div id="reportResponse" class="response"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let conversationHistory = [];
+
+        // Resume Upload
+        document.getElementById('resumeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('resumeFile').files[0]);
+            const candidateName = document.getElementById('candidateName').value.trim();
+            
+            if (!candidateName) {
+                document.getElementById('resumeResponse').innerHTML = 'Error: Candidate name is required';
+                return;
+            }
+            
+            formData.append('candidate_name', candidateName);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/resume`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    document.getElementById('resumeResponse').innerHTML = JSON.stringify(errorData, null, 2);
+                    return;
+                }
+                
+                const data = await response.json();
+                document.getElementById('resumeResponse').innerHTML = JSON.stringify(data, null, 2);
+                
+                // Store candidate name in localStorage for later use
+                localStorage.setItem('candidateName', candidateName);
+                
+                // Auto-fill interview IDs
+                ['skillsInterviewId', 'interviewId', 'reportId'].forEach(id => 
+                    document.getElementById(id).value = data.interview_id
+                );
+            } catch (error) {
+                document.getElementById('resumeResponse').innerHTML = `Error: ${error.message}`;
+            }
+        });
+
+        // Skills Rating
+        async function fetchSkills() {
+            const interviewId = document.getElementById('skillsInterviewId').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/interview/${interviewId}/status`);
+                const data = await response.json();
+                
+                if (!data.technical_skills || data.technical_skills.length === 0) {
+                    document.getElementById('skillsResponse').innerHTML = 'No skills found. Please upload a resume first.';
+                    document.getElementById('skillsForm').style.display = 'none';
+                    return;
+                }
+
+                const skillsList = document.getElementById('skillsList');
+                skillsList.innerHTML = '';
+                
+                data.technical_skills.forEach(skill => {
+                    const div = document.createElement('div');
+                    div.className = 'skill-rating';
+                    
+                    div.innerHTML = `
+                        <label for="skill_${skill}">${skill}:</label>
+                        <input type="range" id="skill_${skill}" name="${skill}" 
+                               min="0" max="10" step="0.5" value="5">
+                        <span>5</span>
+                    `;
+                    skillsList.appendChild(div);
+
+                    const input = div.querySelector('input');
+                    const span = div.querySelector('span');
+                    input.addEventListener('input', () => span.textContent = input.value);
+                });
+
+                document.getElementById('skillsForm').style.display = 'block';
+                document.getElementById('skillsResponse').innerHTML = '';
+            } catch (error) {
+                document.getElementById('skillsResponse').innerHTML = `Error: ${error.message}`;
+                document.getElementById('skillsForm').style.display = 'none';
+            }
+        }
+
+        document.getElementById('skillsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const skills = {};
+            e.target.querySelectorAll('input[type="range"]').forEach(input => {
+                skills[input.name] = parseFloat(input.value);
+            });
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/skills/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        interview_id: document.getElementById('skillsInterviewId').value,
+                        skills: skills
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('skillsResponse').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('skillsResponse').innerHTML = `Error: ${error.message}`;
+            }
+        });
+
+        // Interview
+        async function startInterview() {
+            const interviewId = document.getElementById('interviewId').value;
+            const role = document.getElementById('role').value;
+            const experienceLevel = document.getElementById('experienceLevel').value;
+            const candidateName = localStorage.getItem('candidateName');
+
+            if (!interviewId || !role) {
+                document.getElementById('interviewResponse').innerHTML = 'Error: Interview ID and Role are required';
+                return;
+            }
+
+            if (!candidateName) {
+                document.getElementById('interviewResponse').innerHTML = 'Error: Please upload a resume with candidate name first';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/interview/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        interview_id: interviewId,
+                        role: role,
+                        experience_level: experienceLevel,
+                        candidate_name: candidateName
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    document.getElementById('interviewResponse').innerHTML = JSON.stringify(errorData, null, 2);
+                    return;
+                }
+                
+                const data = await response.json();
+                document.getElementById('interviewArea').style.display = 'block';
+                // Display the introduction or question
+                const displayText = data.interviewer_intro || data.question;
+                document.getElementById('currentQuestion').innerHTML = displayText;
+                document.getElementById('interviewResponse').innerHTML = JSON.stringify(data, null, 2);
+                
+                conversationHistory = [];
+            } catch (error) {
+                document.getElementById('interviewResponse').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function submitAnswer() {
+            const interviewId = document.getElementById('interviewId').value;
+            const role = document.getElementById('role').value;
+            const experienceLevel = document.getElementById('experienceLevel').value;
+            const answer = document.getElementById('answer').value;
+
+            if (!answer.trim()) {
+                document.getElementById('interviewResponse').innerHTML = 'Error: Please provide an answer';
+                return;
+            }
+
+            try {
+                const currentQuestion = document.getElementById('currentQuestion').innerHTML;
+                conversationHistory.push({
+                    question: currentQuestion,
+                    answer: answer
+                });
+
+                const response = await fetch(`${API_BASE_URL}/interview/continue`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        interview_id: interviewId,
+                        role: role,
+                        experience_level: experienceLevel,
+                        conversation_history: conversationHistory
+                    })
+                });
+                const data = await response.json();
+                
+                document.getElementById('currentQuestion').innerHTML = data.question;
+                document.getElementById('answer').value = '';
+                document.getElementById('interviewResponse').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('interviewResponse').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function checkStatus() {
+            const interviewId = document.getElementById('interviewId').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/interview/${interviewId}/status`);
+                const data = await response.json();
+                document.getElementById('interviewResponse').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('interviewResponse').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        // PDF Report
+        async function generateReport() {
+            const interviewId = document.getElementById('reportId').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/report/generate/${interviewId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    document.getElementById('reportResponse').innerHTML = JSON.stringify(errorData, null, 2);
+                    return;
+                }
+                
+                const data = await response.json();
+                document.getElementById('reportResponse').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('reportResponse').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function downloadReport() {
+            const interviewId = document.getElementById('reportId').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/report/${interviewId}`);
+                const data = await response.json();
+                
+                if (data.file_path) {
+                    // Create a link to download the file
+                    const link = document.createElement('a');
+                    link.href = data.file_path;
+                    link.download = `interview_report_${interviewId}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    throw new Error('No report file available');
+                }
+            } catch (error) {
+                document.getElementById('reportResponse').innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
